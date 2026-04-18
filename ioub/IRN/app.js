@@ -391,7 +391,7 @@ function initializeFilters(rawData) {
   };
 
   populateSelect(DOM.scopeSelect, ["All UB", ...rawData.faculties], null, "All UB");
-  DOM.scopeSelect.value = "All UB";
+  DOM.scopeSelect.value = "all";
   DOM.startYearSelect.disabled = false;
   DOM.endYearSelect.disabled = false;
   DOM.irnWindowMode.disabled = false;
