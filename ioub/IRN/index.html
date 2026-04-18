@@ -23,7 +23,7 @@
       <nav class="nav-links">
         <a href="#overview">Overview</a>
         <a href="#publications">Publications</a>
-        <a href="#irn">IRN Universities</a>
+        <a href="#irn">Partner Universities</a>
         <a href="#countries">Countries</a>
         <a href="#lecturers">Lecturers</a>
       </nav>
@@ -70,14 +70,6 @@
             <span>Scope</span>
             <select id="scopeSelect">
               <option value="all">All UB</option>
-              <option value="faculty">Per Faculty</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Faculty</span>
-            <select id="facultySelect" disabled>
-              <option value="">Select faculty</option>
             </select>
           </label>
 
@@ -183,13 +175,13 @@
         <article class="panel table-panel span-2">
           <div class="section-header">
             <div>
-              <p class="eyebrow">IRN Universities</p>
-              <h3>Universities with at least 3 joint publications</h3>
+              <p class="eyebrow">Partner Universities</p>
+              <h3>Universities with joint publications</h3>
             </div>
-            <button class="ghost-button" data-export="irnUniversities">Export CSV</button>
+            <button class="ghost-button" data-export="partnerUniversities">Export CSV</button>
           </div>
           <div class="table-toolbar">
-            <input id="searchIrnUniversityTable" class="table-search-input" type="search" placeholder="Search IRN universities">
+            <input id="searchIrnUniversityTable" class="table-search-input" type="search" placeholder="Search partner universities">
             <div id="pagerIrnUniversityTable" class="table-pager"></div>
           </div>
           <div class="table-scroll">
@@ -198,7 +190,7 @@
                 <tr>
                   <th data-sort="name">University</th>
                   <th data-sort="country">Country</th>
-                  <th data-sort="irnPublicationCount">Joint Publications</th>
+                  <th data-sort="publicationCount">Joint Publications</th>
                   <th>UB Lecturers</th>
                   <th>Faculties</th>
                 </tr>

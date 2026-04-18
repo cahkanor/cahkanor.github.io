@@ -426,6 +426,11 @@ select {
   cursor: default;
 }
 
+.pager-ellipsis {
+  padding: 0 2px;
+  font-weight: 700;
+}
+
 .chart {
   width: 100%;
   height: 360px;

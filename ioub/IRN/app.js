@@ -116,7 +116,6 @@ const DOM = {
   loadStatus: document.getElementById("loadStatus"),
   dataSummaryBadge: document.getElementById("dataSummaryBadge"),
   scopeSelect: document.getElementById("scopeSelect"),
-  facultySelect: document.getElementById("facultySelect"),
   startYearSelect: document.getElementById("startYearSelect"),
   endYearSelect: document.getElementById("endYearSelect"),
   irnWindowMode: document.getElementById("irnWindowMode"),
@@ -141,7 +140,6 @@ const state = {
   raw: null,
   filters: {
     scope: "all",
-    faculty: "",
     startYear: null,
     endYear: null,
     irnWindowMode: "selected",
@@ -152,7 +150,7 @@ const state = {
   sort: {
     universityTable: { key: "publicationCount", direction: "desc" },
     countryTable: { key: "irnUniversityCount", direction: "desc" },
-    irnUniversityTable: { key: "irnPublicationCount", direction: "desc" },
+    irnUniversityTable: { key: "publicationCount", direction: "desc" },
   },
   detail: null,
   charts: {},
@@ -168,7 +166,6 @@ function init() {
 function bindEvents() {
   DOM.reloadDataBtn.addEventListener("click", loadBundledData);
   DOM.scopeSelect.addEventListener("change", onFilterChange);
-  DOM.facultySelect.addEventListener("change", onFilterChange);
   DOM.startYearSelect.addEventListener("change", onFilterChange);
   DOM.endYearSelect.addEventListener("change", onFilterChange);
   DOM.irnWindowMode.addEventListener("change", onFilterChange);
@@ -270,18 +267,16 @@ function clearDashboard() {
   DOM.globalSearchInput.value = "";
   DOM.excludeIndonesiaCheckbox.checked = false;
   DOM.detailCountrySelect.innerHTML = '<option value="">Select country</option>';
-  DOM.facultySelect.innerHTML = '<option value="">Select faculty</option>';
   document.querySelectorAll(".table-search-input").forEach((input) => {
     input.value = "";
   });
   Object.keys(state.tableUi).forEach((key) => {
     state.tableUi[key] = { page: 1, search: "" };
   });
-  [DOM.startYearSelect, DOM.endYearSelect, DOM.facultySelect, DOM.irnWindowMode].forEach((element) => {
+  [DOM.startYearSelect, DOM.endYearSelect, DOM.irnWindowMode].forEach((element) => {
     element.disabled = true;
   });
   DOM.scopeSelect.value = "all";
-  DOM.facultySelect.disabled = true;
   disposeCharts();
   renderEmptyDashboard();
   setStatus("Dashboard cleared. Reload bundled data to begin again.", "info");
@@ -388,7 +383,6 @@ function initializeFilters(rawData) {
 
   state.filters = {
     scope: "all",
-    faculty: "",
     startYear: defaultStartYear,
     endYear: defaultEndYear,
     irnWindowMode: "selected",
@@ -396,40 +390,37 @@ function initializeFilters(rawData) {
     excludeIndonesiaPartners: false,
   };
 
-  DOM.scopeSelect.value = "all";
-  DOM.facultySelect.disabled = true;
+  populateSelect(DOM.scopeSelect, ["All UB", ...rawData.faculties], null, "All UB");
+  DOM.scopeSelect.value = "All UB";
   DOM.startYearSelect.disabled = false;
   DOM.endYearSelect.disabled = false;
   DOM.irnWindowMode.disabled = false;
 
-  populateSelect(DOM.facultySelect, rawData.faculties, "Select faculty");
   populateSelect(DOM.startYearSelect, years, null);
   populateSelect(DOM.endYearSelect, years, null);
   DOM.startYearSelect.value = String(defaultStartYear);
   DOM.endYearSelect.value = String(defaultEndYear);
 }
 
-function populateSelect(selectElement, values, placeholder) {
+function populateSelect(selectElement, values, placeholder, allValue = null) {
   const options = [];
   if (placeholder !== null) {
     options.push(`<option value="">${placeholder}</option>`);
   }
   values.forEach((value) => {
-    options.push(`<option value="${escapeHtml(String(value))}">${escapeHtml(String(value))}</option>`);
+    const optionValue = allValue !== null && value === allValue ? "all" : String(value);
+    options.push(`<option value="${escapeHtml(optionValue)}">${escapeHtml(String(value))}</option>`);
   });
   selectElement.innerHTML = options.join("");
 }
 
 function onFilterChange() {
   state.filters.scope = DOM.scopeSelect.value;
-  state.filters.faculty = DOM.facultySelect.value;
   state.filters.startYear = Number.parseInt(DOM.startYearSelect.value, 10) || null;
   state.filters.endYear = Number.parseInt(DOM.endYearSelect.value, 10) || null;
   state.filters.irnWindowMode = DOM.irnWindowMode.value;
   state.filters.search = DOM.globalSearchInput.value.trim().toLowerCase();
   state.filters.excludeIndonesiaPartners = DOM.excludeIndonesiaCheckbox.checked;
-
-  DOM.facultySelect.disabled = state.filters.scope !== "faculty";
 
   if (state.filters.startYear && state.filters.endYear && state.filters.startYear > state.filters.endYear) {
     [state.filters.startYear, state.filters.endYear] = [state.filters.endYear, state.filters.startYear];
@@ -463,8 +454,8 @@ function computeFilteredAnalytics(rawData, filters) {
     if (!withinYearRange) {
       return false;
     }
-    if (filters.scope === "faculty") {
-      return filters.faculty ? paper.faculties.includes(filters.faculty) : false;
+    if (filters.scope !== "all") {
+      return paper.faculties.includes(filters.scope);
     }
     return true;
   });
@@ -1148,7 +1139,7 @@ function renderEmptyCharts() {
 
 function renderTables(derived) {
   renderUniversityTable(derived.universityStats);
-  renderIrnUniversityTable(derived.irnUniversityStats);
+  renderIrnUniversityTable(derived.universityStats);
   renderCountryTable(derived.countryStats);
   renderLecturerUniversityTable(derived.lecturerUniversityRows);
   renderLecturerCountryTable(derived.lecturerCountryRows);
@@ -1195,7 +1186,7 @@ function renderUniversityTable(rows) {
 function renderIrnUniversityTable(rows) {
   const sorted = sortRows("irnUniversityTable", rows);
   const paged = filterAndPaginateRows("irnUniversityTable", sorted, (row) =>
-    `${row.name} ${row.country} ${row.irnPublicationCount} ${row.lecturerNames.join(" ")} ${row.faculties.join(" ")}`
+    `${row.name} ${row.country} ${row.publicationCount} ${row.lecturerNames.join(" ")} ${row.faculties.join(" ")}`
   );
   DOM.irnUniversityTable.innerHTML = renderRowsOrEmpty(
     paged.rows.map(
@@ -1203,7 +1194,7 @@ function renderIrnUniversityTable(rows) {
       <tr>
         <td class="clickable-cell" data-detail-type="university" data-detail-key="${escapeAttribute(row.name)}">${escapeHtml(row.name)}</td>
         <td class="clickable-cell" data-detail-type="country" data-detail-key="${escapeAttribute(row.country)}">${escapeHtml(row.country)}</td>
-        <td>${formatNumber(row.irnPublicationCount)}</td>
+        <td>${formatNumber(row.publicationCount)}</td>
         <td>${escapeHtml(row.lecturerNames.join(", ")) || '<span class="muted">No matched lecturers</span>'}</td>
         <td>${renderTagList(row.faculties)}</td>
       </tr>
@@ -1409,11 +1400,11 @@ function exportDataset(name) {
         IRNPublicationCount: row.irnPublicationCount,
         IRNQualified: row.irnQualified ? "Yes" : "No",
       })),
-    irnUniversities: () =>
-      state.derived.irnUniversityStats.map((row) => ({
+    partnerUniversities: () =>
+      state.derived.universityStats.map((row) => ({
         University: row.name,
         Country: row.country,
-        JointPublications: row.irnPublicationCount,
+        JointPublications: row.publicationCount,
         UBLecturers: row.lecturerNames.join("; "),
         Faculties: row.faculties.join("; "),
       })),
@@ -1663,12 +1654,11 @@ function renderPager(tableId, pageState) {
     return;
   }
 
-  const pageButtons = [];
-  for (let page = 1; page <= pageState.totalPages; page += 1) {
-    pageButtons.push(
-      `<button type="button" data-page-number="${page}" ${page === pageState.page ? 'disabled' : ''}>${page}</button>`
-    );
-  }
+  const pageButtons = buildCompactPageList(pageState.page, pageState.totalPages).map((item) =>
+    item === "ellipsis"
+      ? '<span class="pager-ellipsis">...</span>'
+      : `<button type="button" data-page-number="${item}" ${item === pageState.page ? 'disabled' : ''}>${item}</button>`
+  );
 
   container.innerHTML = `
     <span>${pageState.totalRows ? `${pageState.startIndex + 1}-${Math.min(pageState.startIndex + TABLE_PAGE_SIZE, pageState.totalRows)}` : "0"} of ${pageState.totalRows}</span>
@@ -1688,6 +1678,43 @@ function renderPager(tableId, pageState) {
       renderDashboard();
     });
   });
+}
+
+function buildCompactPageList(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set([1, totalPages]);
+  for (let page = currentPage - 1; page <= currentPage + 1; page += 1) {
+    if (page > 1 && page < totalPages) {
+      pages.add(page);
+    }
+  }
+
+  if (currentPage <= 3) {
+    pages.add(2);
+    pages.add(3);
+    pages.add(4);
+  }
+
+  if (currentPage >= totalPages - 2) {
+    pages.add(totalPages - 1);
+    pages.add(totalPages - 2);
+    pages.add(totalPages - 3);
+  }
+
+  const sortedPages = Array.from(pages).filter((page) => page >= 1 && page <= totalPages).sort((a, b) => a - b);
+  const compact = [];
+
+  sortedPages.forEach((page, index) => {
+    if (index > 0 && page - sortedPages[index - 1] > 1) {
+      compact.push("ellipsis");
+    }
+    compact.push(page);
+  });
+
+  return compact;
 }
 
 function formatNumber(value) {
@@ -1731,7 +1758,7 @@ function hideLoading() {
 }
 
 function buildFilterStamp() {
-  return `${state.filters.scope}_${state.filters.faculty || "all"}_${state.filters.startYear || "min"}-${state.filters.endYear || "max"}`;
+  return `${state.filters.scope || "all"}_${state.filters.startYear || "min"}-${state.filters.endYear || "max"}`;
 }
 
 function downloadFile(filename, content, mimeType) {
