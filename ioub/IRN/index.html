@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IRN Analytics Dashboard | Universitas Brawijaya</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-mark">IRN</div>
+        <div>
+          <p class="eyebrow">Universitas Brawijaya</p>
+          <h1>International Research Network Dashboard</h1>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#publications">Publications</a>
+        <a href="#irn">IRN Universities</a>
+        <a href="#countries">Countries</a>
+        <a href="#lecturers">Lecturers</a>
+      </nav>
+
+      <section class="panel upload-panel">
+        <h2>Bundled Data</h2>
+        <p>The dashboard auto-loads the bundled Excel datasets when <code>index.html</code> opens.</p>
+
+        <div class="status-list">
+          <div><strong>Lecturer Mapping:</strong> <code>data/SCOPUS ID DATA - UB.xlsx</code></div>
+          <div><strong>Publications:</strong> <code>data/Publications_at_Brawijaya_University.xlsx</code></div>
+          <div><strong>Institution Countries:</strong> <code>data/Institution Country File.xlsx</code></div>
+        </div>
+
+        <div class="upload-actions">
+          <button id="reloadDataBtn" class="ghost-button" type="button">Reload Bundled Data</button>
+        </div>
+
+        <div id="loadStatus" class="status-box">
+          Loading bundled datasets.
+        </div>
+      </section>
+
+      <section class="panel note-panel">
+        <h2>Analysis Notes</h2>
+        <ul class="note-list">
+          <li>One publication can belong to multiple faculties if multiple UB lecturers from different faculties co-author it.</li>
+          <li>Partner university counts exclude UB after institution normalization.</li>
+          <li>IRN threshold is configurable in code and defaults to at least 3 distinct publications.</li>
+          <li>Country analysis uses an inference layer and an alias dictionary that can be extended in <code>app.js</code>.</li>
+        </ul>
+      </section>
+    </aside>
+
+    <main class="main-content">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Client-side analytics</p>
+          <h2>Publication, collaboration, IRN, and partnership analysis for university management</h2>
+          <p class="hero-copy">Filter by year and faculty, inspect partner universities and countries, and drill into lecturer collaboration patterns without any backend.</p>
+        </div>
+        <div class="hero-pill">
+          <span class="pulse"></span>
+          <span id="dataSummaryBadge">No data loaded</span>
+        </div>
+      </section>
+
+      <section class="filters panel" id="overview">
+        <div class="filter-grid">
+          <label>
+            <span>Scope</span>
+            <select id="scopeSelect">
+              <option value="all">All UB</option>
+              <option value="faculty">Per Faculty</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Faculty</span>
+            <select id="facultySelect" disabled>
+              <option value="">Select faculty</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Start Year</span>
+            <select id="startYearSelect" disabled></select>
+          </label>
+
+          <label>
+            <span>End Year</span>
+            <select id="endYearSelect" disabled></select>
+          </label>
+
+          <label>
+            <span>IRN Window</span>
+            <select id="irnWindowMode" disabled>
+              <option value="selected">Selected range</option>
+              <option value="rolling5">Last 5 years ending at selected end year</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Search</span>
+            <input id="globalSearchInput" type="search" placeholder="University, country, lecturer">
+          </label>
+
+          <div class="checkbox-filter">
+            <span>Partner Filter</span>
+            <label class="toggle-row">
+              <input id="excludeIndonesiaCheckbox" type="checkbox">
+              <span>Exclude partners from Indonesia</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="kpi-grid" id="kpiGrid"></section>
+
+      <section class="content-grid" id="publications">
+        <article class="panel chart-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Publication Trend</p>
+              <h3>Publications by year</h3>
+            </div>
+          </div>
+          <div id="yearTrendChart" class="chart"></div>
+        </article>
+
+        <article class="panel chart-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Collaboration Mix</p>
+              <h3>Domestic vs international by year</h3>
+            </div>
+          </div>
+          <div id="intlTrendChart" class="chart"></div>
+        </article>
+
+        <article class="panel chart-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Countries/Regions</p>
+              <h3>Distribution of publication counts</h3>
+            </div>
+          </div>
+          <div id="countryDistributionChart" class="chart"></div>
+        </article>
+
+        <article class="panel chart-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Collaboration Share</p>
+              <h3>Domestic vs international share</h3>
+            </div>
+          </div>
+          <div id="domesticInternationalChart" class="chart"></div>
+        </article>
+      </section>
+
+      <section class="content-grid" id="irn">
+        <article class="panel chart-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Partner Ranking</p>
+              <h3>Top collaborating universities</h3>
+            </div>
+            <button class="ghost-button" data-export="universities">Export CSV</button>
+          </div>
+          <div id="topUniversitiesChart" class="chart"></div>
+        </article>
+
+        <article class="panel chart-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Faculty Performance</p>
+              <h3>Top faculties by international collaboration</h3>
+            </div>
+          </div>
+          <div id="facultyIntlChart" class="chart"></div>
+        </article>
+
+        <article class="panel table-panel span-2">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">IRN Universities</p>
+              <h3>Universities with at least 3 joint publications</h3>
+            </div>
+            <button class="ghost-button" data-export="irnUniversities">Export CSV</button>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchIrnUniversityTable" class="table-search-input" type="search" placeholder="Search IRN universities">
+            <div id="pagerIrnUniversityTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort="name">University</th>
+                  <th data-sort="country">Country</th>
+                  <th data-sort="irnPublicationCount">Joint Publications</th>
+                  <th>UB Lecturers</th>
+                  <th>Faculties</th>
+                </tr>
+              </thead>
+              <tbody id="irnUniversityTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-grid" id="countries">
+        <article class="panel chart-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Country Ranking</p>
+              <h3>Top collaborating countries</h3>
+            </div>
+            <button class="ghost-button" data-export="countries">Export CSV</button>
+          </div>
+          <div id="topCountriesChart" class="chart"></div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">IRN Countries</p>
+              <h3>Countries hosting IRN-qualified universities</h3>
+            </div>
+            <button class="ghost-button" data-export="irnCountries">Export CSV</button>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchCountryTable" class="table-search-input" type="search" placeholder="Search countries">
+            <div id="pagerCountryTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort="name">Country</th>
+                  <th data-sort="irnUniversityCount">IRN Universities</th>
+                  <th data-sort="publicationCount">Joint Publications</th>
+                  <th>Universities</th>
+                </tr>
+              </thead>
+              <tbody id="countryTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel table-panel span-2">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Partner Universities</p>
+              <h3>Searchable collaboration table</h3>
+            </div>
+            <button class="ghost-button" data-export="universities">Export CSV</button>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchUniversityTable" class="table-search-input" type="search" placeholder="Search partner universities">
+            <div id="pagerUniversityTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort="name">University</th>
+                  <th data-sort="country">Country</th>
+                  <th data-sort="publicationCount">Publications</th>
+                  <th data-sort="lecturerCount">UB Lecturers</th>
+                  <th>Faculties</th>
+                </tr>
+              </thead>
+              <tbody id="universityTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-grid" id="lecturers">
+        <article class="panel table-panel span-2">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Lecturer Collaboration</p>
+              <h3>UB lecturers by partner university</h3>
+            </div>
+            <button class="ghost-button" data-export="lecturerUniversity">Export CSV</button>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchLecturerUniversityTable" class="table-search-input" type="search" placeholder="Search partner universities">
+            <div id="pagerLecturerUniversityTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>University</th>
+                  <th>Country</th>
+                  <th>Papers per Lecturer</th>
+                </tr>
+              </thead>
+              <tbody id="lecturerUniversityTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Lecturer Collaboration</p>
+              <h3>UB lecturers by country</h3>
+            </div>
+            <button class="ghost-button" data-export="lecturerCountry">Export CSV</button>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchLecturerCountryTable" class="table-search-input" type="search" placeholder="Search countries">
+            <div id="pagerLecturerCountryTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Country</th>
+                  <th>Universities</th>
+                  <th>Lecturers</th>
+                </tr>
+              </thead>
+              <tbody id="lecturerCountryTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel detail-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Drill-down</p>
+              <h3>Selected university or country</h3>
+            </div>
+            <select id="detailCountrySelect" class="detail-select">
+              <option value="">Select country</option>
+            </select>
+          </div>
+          <div id="detailPanel" class="detail-body empty-state">
+            Click a university or country name in the tables or charts to inspect yearly trends, lecturers, and faculty involvement.
+          </div>
+        </article>
+      </section>
+
+      <section class="content-grid hidden-section" id="quality">
+        <article class="panel table-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Data Quality</p>
+              <h3>Unmatched Scopus author IDs</h3>
+            </div>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchUnmatchedAuthorsTable" class="table-search-input" type="search" placeholder="Search author IDs">
+            <div id="pagerUnmatchedAuthorsTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll short-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Author ID</th>
+                  <th>Occurrences</th>
+                </tr>
+              </thead>
+              <tbody id="unmatchedAuthorsTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Data Quality</p>
+              <h3>Institutions with unknown country</h3>
+            </div>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchUnmatchedInstitutionsTable" class="table-search-input" type="search" placeholder="Search institutions">
+            <div id="pagerUnmatchedInstitutionsTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll short-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Institution</th>
+                  <th>Occurrences</th>
+                </tr>
+              </thead>
+              <tbody id="unmatchedInstitutionsTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel table-panel span-2">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Normalization</p>
+              <h3>Institution variants mapped to the same canonical university</h3>
+            </div>
+          </div>
+          <div class="table-toolbar">
+            <input id="searchDuplicateVariantsTable" class="table-search-input" type="search" placeholder="Search canonical institution or variant">
+            <div id="pagerDuplicateVariantsTable" class="table-pager"></div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Canonical University</th>
+                  <th>Detected Variants</th>
+                </tr>
+              </thead>
+              <tbody id="duplicateVariantsTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <p id="loadingMessage">Reading Excel files...</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script src="./bundled-data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

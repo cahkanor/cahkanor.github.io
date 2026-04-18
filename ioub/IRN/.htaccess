@@ -1,0 +1,5 @@
+Options -Indexes
+
+<FilesMatch "\.(xlsx|xls)$">
+  Require all denied
+</FilesMatch>
