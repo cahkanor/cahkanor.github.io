@@ -382,12 +382,15 @@ function initializeFilters(rawData) {
   const years = Array.from(new Set(rawData.publications.map((paper) => paper.year))).sort((a, b) => a - b);
   const minYear = years[0];
   const maxYear = years[years.length - 1];
+  const currentYear = new Date().getFullYear();
+  const defaultEndYear = years.includes(currentYear) ? currentYear : maxYear;
+  const defaultStartYear = Math.max(minYear, defaultEndYear - 4);
 
   state.filters = {
     scope: "all",
     faculty: "",
-    startYear: minYear,
-    endYear: maxYear,
+    startYear: defaultStartYear,
+    endYear: defaultEndYear,
     irnWindowMode: "selected",
     search: "",
     excludeIndonesiaPartners: false,
@@ -402,8 +405,8 @@ function initializeFilters(rawData) {
   populateSelect(DOM.facultySelect, rawData.faculties, "Select faculty");
   populateSelect(DOM.startYearSelect, years, null);
   populateSelect(DOM.endYearSelect, years, null);
-  DOM.startYearSelect.value = String(minYear);
-  DOM.endYearSelect.value = String(maxYear);
+  DOM.startYearSelect.value = String(defaultStartYear);
+  DOM.endYearSelect.value = String(defaultEndYear);
 }
 
 function populateSelect(selectElement, values, placeholder) {
@@ -926,7 +929,13 @@ function renderIntlTrendChart(yearlyStats) {
 
   chart.setOption({
     tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-    legend: { bottom: 0 },
+    legend: {
+      bottom: 0,
+      data: [
+        { name: "Domestic", itemStyle: { color: "#94a9c7" } },
+        { name: "International", itemStyle: { color: "#c06c2e" } },
+      ],
+    },
     grid: { left: 40, right: 20, top: 20, bottom: 50 },
     xAxis: { type: "category", data: yearlyStats.map((row) => row.year) },
     yAxis: { type: "value" },
@@ -1654,16 +1663,28 @@ function renderPager(tableId, pageState) {
     return;
   }
 
+  const pageButtons = [];
+  for (let page = 1; page <= pageState.totalPages; page += 1) {
+    pageButtons.push(
+      `<button type="button" data-page-number="${page}" ${page === pageState.page ? 'disabled' : ''}>${page}</button>`
+    );
+  }
+
   container.innerHTML = `
     <span>${pageState.totalRows ? `${pageState.startIndex + 1}-${Math.min(pageState.startIndex + TABLE_PAGE_SIZE, pageState.totalRows)}` : "0"} of ${pageState.totalRows}</span>
     <button type="button" data-page-action="prev" ${pageState.page <= 1 ? "disabled" : ""}>Prev</button>
+    ${pageButtons.join("")}
     <button type="button" data-page-action="next" ${pageState.page >= pageState.totalPages ? "disabled" : ""}>Next</button>
   `;
 
   container.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => {
       const ui = state.tableUi[tableId];
-      ui.page += button.dataset.pageAction === "prev" ? -1 : 1;
+      if (button.dataset.pageNumber) {
+        ui.page = Number(button.dataset.pageNumber);
+      } else {
+        ui.page += button.dataset.pageAction === "prev" ? -1 : 1;
+      }
       renderDashboard();
     });
   });
