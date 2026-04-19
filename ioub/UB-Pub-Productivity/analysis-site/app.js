@@ -661,7 +661,9 @@ function renderTable(targetEl, config) {
 
   columns.forEach((column) => {
     const th = document.createElement("th");
-    th.textContent = column.label;
+    const isActive = tableState.sortKey === column.key;
+    const arrow = isActive ? (tableState.sortDir === "asc" ? " ↑" : " ↓") : " ↕";
+    th.textContent = `${column.label}${arrow}`;
     th.addEventListener("click", () => onSort(column.key));
     headRow.appendChild(th);
   });
