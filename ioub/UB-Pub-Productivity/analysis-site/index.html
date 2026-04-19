@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UB Publication Productivity Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Universitas Brawijaya</p>
+        <h1>Publication Productivity Analysis</h1>
+        <p class="hero-copy">
+          Explore yearly history and monthly snapshots of lecturer publication productivity, citations, h-index,
+          faculty performance, and position-based trends from one static dashboard.
+        </p>
+      </div>
+      <div class="hero-note">
+        <div class="note-label">Data Sources</div>
+        <div class="note-value">CSV history + monthly snapshots</div>
+        <div class="note-label">Scope</div>
+        <div class="note-value">All UB or faculty level</div>
+      </div>
+    </header>
+
+    <section class="control-panel">
+      <div class="control-grid">
+        <label class="control">
+          <span>Time Scope</span>
+          <select id="granularitySelect">
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </label>
+        <label class="control">
+          <span>Analysis Scope</span>
+          <select id="scopeSelect"></select>
+        </label>
+        <label class="control">
+          <span>Focus Period</span>
+          <select id="periodSelect"></select>
+        </label>
+        <label class="control">
+          <span>Faculty Comparison</span>
+          <select id="comparisonModeSelect">
+            <option value="selected">Selected Period</option>
+            <option value="all">All Visible Periods</option>
+          </select>
+        </label>
+      </div>
+      <div class="toolbar">
+        <button id="downloadButton" class="button primary">Download Filtered Table CSV</button>
+        <div id="statusText" class="status-text">Loading data...</div>
+      </div>
+    </section>
+
+    <section class="kpi-grid" id="kpiGrid"></section>
+
+    <section class="layout-grid">
+      <article class="card chart-card">
+        <div class="card-header">
+          <div>
+            <h2>Trend Overview</h2>
+            <p>Publications and citations across visible periods.</p>
+          </div>
+        </div>
+        <canvas id="trendChart"></canvas>
+      </article>
+
+      <article class="card chart-card">
+        <div class="card-header">
+          <div>
+            <h2>Publication-Active Lecturers</h2>
+            <p>Lecturers with at least one publication, grouped by faculty.</p>
+          </div>
+        </div>
+        <canvas id="activeFacultyChart"></canvas>
+      </article>
+
+      <article class="card chart-card">
+        <div class="card-header">
+          <div>
+            <h2>Faculty Publications and Citations</h2>
+            <p>Compare faculty output for the current scope.</p>
+          </div>
+        </div>
+        <canvas id="facultyImpactChart"></canvas>
+      </article>
+
+      <article class="card chart-card">
+        <div class="card-header">
+          <div>
+            <h2>Publications and Citations by Jabatan</h2>
+            <p>See how output changes across lecturer positions.</p>
+          </div>
+        </div>
+        <canvas id="jabatanChart"></canvas>
+      </article>
+    </section>
+
+    <section class="layout-grid secondary-grid">
+      <article class="card insight-card">
+        <div class="card-header">
+          <div>
+            <h2>Top Movers</h2>
+            <p>Largest current-period gains in publications and citations.</p>
+          </div>
+        </div>
+        <div id="topMovers"></div>
+      </article>
+
+      <article class="card insight-card">
+        <div class="card-header">
+          <div>
+            <h2>Coverage Notes</h2>
+            <p>Quick checks on data quality and matching.</p>
+          </div>
+        </div>
+        <div id="coverageNotes"></div>
+      </article>
+    </section>
+
+    <section class="tables-section">
+      <article class="card table-card">
+        <div class="card-header split">
+          <div>
+            <h2>Lecturer Rankings</h2>
+            <p>Rank lecturers by publications, citations, or h-index for the current filter.</p>
+          </div>
+          <div class="table-toolbar">
+            <label class="control inline-control">
+              <span>Ranking Metric</span>
+              <select id="rankingMetricSelect">
+                <option value="publications">Publications</option>
+                <option value="citations">Citations</option>
+                <option value="hIndex">H-Index</option>
+              </select>
+            </label>
+            <label class="control inline-control">
+              <span>Search</span>
+              <input type="search" id="rankingSearch" placeholder="Search lecturer or faculty">
+            </label>
+          </div>
+        </div>
+        <div id="rankingTable"></div>
+      </article>
+
+      <article class="card table-card">
+        <div class="card-header split">
+          <div>
+            <h2>Detailed Records</h2>
+            <p>Inspect the underlying filtered rows with sorting, pagination, and search.</p>
+          </div>
+          <div class="table-toolbar">
+            <label class="control inline-control">
+              <span>Search</span>
+              <input type="search" id="detailSearch" placeholder="Search lecturer, faculty, jabatan">
+            </label>
+          </div>
+        </div>
+        <div id="detailTable"></div>
+      </article>
+    </section>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
