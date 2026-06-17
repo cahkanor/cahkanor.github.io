@@ -78,6 +78,18 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Optional limit for lecturers to process, useful for testing.",
     )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=6,
+        help="Maximum retries for rate limits or transient server errors. Default: 6",
+    )
+    parser.add_argument(
+        "--backoff-seconds",
+        type=float,
+        default=3.0,
+        help="Base backoff in seconds for retries. Default: 3",
+    )
     return parser.parse_args()
 
 
@@ -199,9 +211,19 @@ def build_previous_snapshot_index(path: Path | None) -> dict[str, dict[str, str]
 
 
 class ElsevierClient:
-    def __init__(self, api_key: str, insttoken: str | None, timeout: float, sleep_seconds: float) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        insttoken: str | None,
+        timeout: float,
+        sleep_seconds: float,
+        max_retries: int,
+        backoff_seconds: float,
+    ) -> None:
         self.timeout = timeout
         self.sleep_seconds = sleep_seconds
+        self.max_retries = max_retries
+        self.backoff_seconds = backoff_seconds
         self.session = requests.Session()
         self.session.headers.update(
             {
@@ -213,11 +235,35 @@ class ElsevierClient:
             self.session.headers["X-ELS-Insttoken"] = insttoken
 
     def _request(self, url: str, params: dict[str, Any]) -> requests.Response:
-        response = self.session.get(url, params=params, timeout=self.timeout)
-        response.raise_for_status()
-        if self.sleep_seconds:
-            time.sleep(self.sleep_seconds)
-        return response
+        for attempt in range(self.max_retries + 1):
+            response = self.session.get(url, params=params, timeout=self.timeout)
+            status = response.status_code
+
+            if status in (429, 500, 502, 503, 504):
+                if attempt >= self.max_retries:
+                    response.raise_for_status()
+                retry_after = response.headers.get("Retry-After")
+                if retry_after:
+                    try:
+                        wait_seconds = max(float(retry_after), self.backoff_seconds)
+                    except ValueError:
+                        wait_seconds = self.backoff_seconds * (2**attempt)
+                else:
+                    wait_seconds = self.backoff_seconds * (2**attempt)
+                print(
+                    f"Rate/server limit hit ({status}) for {url}. "
+                    f"Waiting {wait_seconds:.1f}s before retry {attempt + 1}/{self.max_retries}...",
+                    file=sys.stderr,
+                )
+                time.sleep(wait_seconds)
+                continue
+
+            response.raise_for_status()
+            if self.sleep_seconds:
+                time.sleep(self.sleep_seconds)
+            return response
+
+        raise RuntimeError("Unreachable retry loop exit")
 
     def fetch_author_totals(self, author_id: str) -> tuple[int | None, int | None, int | None]:
         response = self._request(
@@ -298,6 +344,8 @@ def main() -> int:
         insttoken=insttoken,
         timeout=args.timeout,
         sleep_seconds=args.sleep,
+        max_retries=max(0, args.max_retries),
+        backoff_seconds=max(0.1, args.backoff_seconds),
     )
 
     master_rows = read_csv(master_path)
