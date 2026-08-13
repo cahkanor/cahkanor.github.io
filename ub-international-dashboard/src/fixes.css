@@ -7,6 +7,10 @@
 .table-count { margin-bottom:10px; }
 .data-table th[data-register-sort] { user-select:none; }
 .data-table th[data-register-sort]:hover { background:#dce9f4; color:#003b70; }
+.plotly-map { width:100%; height:440px; border-radius:12px; overflow:hidden; background:#eef7ff; }
+.filtered-register { grid-template-columns:minmax(240px,2fr) repeat(3,minmax(145px,1fr)) auto auto; }
+@media (max-width:1200px) { .filtered-register { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:800px) { .plotly-map { height:330px; } .filtered-register { grid-template-columns:1fr; } }
 
 .donut-center { font-size: 22px; line-height: 1; }
 .donut-center small { display: block; max-width: 82px; margin: 5px auto 0; color: #64748b; font-size: 10px; font-weight: 650; line-height: 1.2; }
