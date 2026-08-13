@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Universitas Brawijaya international collaboration monitoring dashboard" />
+  <title>UB Global Partnerships Dashboard</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+  <link rel="stylesheet" href="./src/fixes.css" />
+</head>
+<body>
+  <div id="loading" class="loading"><div class="spinner"></div><strong>Loading UB collaboration data…</strong></div>
+  <div id="app" class="app-shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">UB</div><div><strong>Global Partnerships</strong><span>Monitoring dashboard</span></div></div>
+      <nav id="nav" aria-label="Primary navigation"></nav>
+      <div class="sidebar-note"><span class="pulse"></span><div><strong>Static & read-only</strong><small id="updatedText">Data generated locally</small></div></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menuButton" aria-label="Toggle navigation">☰</button>
+        <div class="global-search"><span>⌕</span><input id="globalSearch" type="search" placeholder="Search agreements, activities, partners…" autocomplete="off" /><kbd>Ctrl K</kbd><div id="searchResults" class="search-results" hidden></div></div>
+        <button class="button ghost" onclick="window.print()">Print / PDF</button>
+      </header>
+      <main id="main" tabindex="-1"></main>
+      <footer>Universitas Brawijaya · International collaboration intelligence · Data must be updated through the source Excel workbooks.</footer>
+    </div>
+  </div>
+  <div id="fatal" class="fatal" hidden><h1>Dashboard data unavailable</h1><p id="fatalMessage"></p><p>Run <code>python scripts/prepare_data.py</code> and serve the project through a local web server.</p></div>
+  <script>
+    if (location.protocol === 'file:') {
+      window.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('loading').hidden = true;
+        document.getElementById('fatal').hidden = false;
+        document.getElementById('fatalMessage').innerHTML =
+          'Chrome blocks local JSON and JavaScript modules opened through <code>file://</code>. ' +
+          'Double-click <strong>START_DASHBOARD.cmd</strong> in the project folder instead.';
+      });
+    }
+  </script>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
